@@ -1,0 +1,182 @@
+Github Actions with Nginx, K8s and Load Balancer
+
+Docker with Nginx Lab
+
+Overview
+Learn how to build, test, and push Docker images using GitHub Actions. This lab uses Nginx as an example web server.
+
+Lab Structure
+your-repository/
+├── .github/
+│   └── workflows/
+│       └── docker.yml
+├── html/
+│   └── index.html
+├── nginx.conf
+└── Dockerfile
+Setup Files
+Create html/index.html:
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GitHub Actions Docker Lab</title>
+</head>
+<body>
+    <h1>Hello from GitHub Actions!</h1>
+    <p>This is a Docker lab using Nginx.</p>
+</body>
+</html>
+Create nginx.conf:
+server {
+    listen 80;
+    server_name localhost;
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+    }
+}
+Create Workflow File Create .github/workflows/docker.yml:
+name: Docker Nginx Lab
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  docker:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Login to DockerHub
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Build Image
+      - name: Build Docker image
+        run: docker build -t mynginx:test .
+
+      # Test Image
+      - name: Test Docker image
+        run: |
+          docker run -d -p 8080:80 --name test-nginx mynginx:test
+          sleep 5
+          curl http://localhost:8080 | grep "Hello from GitHub Actions"
+          docker stop test-nginx
+
+      # Push Image
+      - name: Push to DockerHub
+        run: |
+          docker tag mynginx:test ${{ secrets.DOCKER_USERNAME }}/mynginx:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/mynginx:latest
+Required Secrets
+Add these secrets to your repository:
+
+DOCKER_USERNAME: Your Docker Hub username
+DOCKER_PASSWORD: Your Docker Hub password/token
+Step-by-Step Instructions
+Create Directory Structure
+mkdir -p .github/workflows html
+Create Files
+Create all files as shown above
+Place them in their respective directories
+Add Docker Hub Secrets
+Go to repository Settings
+Add Docker Hub credentials as secrets
+Test Workflow
+Create a pull request
+Merge it to trigger the workflow
+Check Actions tab for progress
+How It Works
+Trigger Condition
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+Triggers when a PR is merged to main
+Docker Login
+- name: Login to DockerHub
+  uses: docker/login-action@v3
+  with:
+    username: ${{ secrets.DOCKER_USERNAME }}
+    password: ${{ secrets.DOCKER_PASSWORD }}
+Authenticates with Docker Hub
+Build and Test
+- name: Build Docker image
+  run: docker build -t mynginx:test .
+
+- name: Test Docker image
+  run: |
+    docker run -d -p 8080:80 --name test-nginx mynginx:test
+Builds image from Dockerfile
+Runs container for testing
+Push to Registry
+- name: Push to DockerHub
+  run: |
+    docker tag mynginx:test ${{ secrets.DOCKER_USERNAME }}/mynginx:latest
+    docker push ${{ secrets.DOCKER_USERNAME }}/mynginx:latest
+Tags and pushes image to Docker Hub
+Testing Locally
+Build Image
+docker build -t mynginx:test .
+Run Container
+docker run -d -p 8080:80 mynginx:test
+Test Website
+curl http://localhost:8080
+Troubleshooting
+Common Issues
+Docker Login Fails
+Verify Docker Hub credentials
+Check secret names
+Ensure secrets are set correctly
+Build Fails
+# Check Dockerfile syntax
+docker build --no-cache -t mynginx:test .
+
+# Check file permissions
+ls -la html/ nginx.conf
+Test Fails
+# Check container logs
+docker logs test-nginx
+
+# Check container status
+docker ps -a
+Practice Exercises
+Add Multi-Stage Build
+# Use nginx:alpine as base image (lightweight)
+FROM nginx:alpine
+
+# Copy static files to nginx html directory
+COPY html/ /usr/share/nginx/html/
+
+# Nginx runs on port 80 by default
+EXPOSE 80
+
+# Start Nginx in the foreground
+CMD ["nginx", "-g", "daemon off;"]
+Add Health Check
+- name: Health check
+  run: |
+    curl -f http://localhost:8080 || exit 1
+Add Version Tag
+- name: Tag version
+  run: |
+    docker tag mynginx:test ${{ secrets.DOCKER_USERNAME }}/mynginx:${{ github.sha }}
+Tips
+Use specific base image tags
+Implement health checks
+Tag images properly
+Keep images minimal
+Test locally before pushing
+Additional Resources
+Docker Documentation
+Nginx Documentation
+GitHub Actions Docker Guide
