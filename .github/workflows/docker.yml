@@ -1,10 +1,14 @@
 name: Docker Nginx LAB
+# on:
+#     pull_request:
+#         types: [closed]
+#         branches: 
+#             - main
 on:
-    pull_request:
-        types: [closed]
-        branches: 
-            - main
-
+    push:
+      branches:
+        - main
+  
 jobs:
     docker:
         if: github.event.pull_request.merged == true
