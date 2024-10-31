@@ -38,6 +38,3 @@ jobs:
               run: |
                docker tag mynginx:latest ${{ secrets.DOCKERHUB_USERNAME }}/mynginx:latest
                docker push ${{ secrets.DOCKERHUB_USERNAME }}/mynginx:latest
-
-               
-
